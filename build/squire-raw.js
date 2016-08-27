@@ -2595,10 +2595,25 @@ proto.fireEvent = function ( type, event ) {
         if ( event.type !== type ) {
             event.type = type;
         }
+
+        // stitch in methods to stop event propagation
+        var cancelled = false;
+        function wrapAndCancel(handler) {
+            var oldFunc = event[handler];
+            event[handler] = function() {
+                cancelled = true;
+                if (oldFunc) oldFunc();
+            }
+        }
+
+        wrapAndCancel('stopPropagation');
+        wrapAndCancel('stopImmediatePropagation');
+
+
         // Clone handlers array, so any handlers added/removed do not affect it.
         handlers = handlers.slice();
         l = handlers.length;
-        while ( l-- ) {
+        while ( l-- && !cancelled) {
             obj = handlers[l];
             try {
                 if ( obj.handleEvent ) {
